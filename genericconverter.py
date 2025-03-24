@@ -1,24 +1,23 @@
 import os
 import re
-#can be installed with pip, in my case already installed when this script is open through anaconda virtual environment
 from bs4 import BeautifulSoup
 import nbformat as nbf
 
-# Find HTML file with 'BOB_SMITH' in the name
-html_files = [f for f in os.listdir() if f.endswith('.html') and 'BOB_SMITH' in f]
+# Get user input for file paths
+input_html = input("Enter the path to the HTML file to convert: ").strip()
+output_ipynb = input("Enter the output notebook filename: ").strip()
 
-if not html_files:
-    print("Error: No HTML files with 'BOB_SMITH' in name found in current directory.")
+# Ensure output has .ipynb extension
+if not output_ipynb.endswith('.ipynb'):
+    output_ipynb += '.ipynb'
+
+#Must type .html at end of file name
+# Verify input file exists
+if not os.path.exists(input_html):
+    print(f"Error: File '{input_html}' not found")
     exit()
-elif len(html_files) > 1:
-    print(f"Multiple BOB_SMITH HTML files found. Using first match: {html_files[0]}")
 
-input_html = html_files[0]
-print(f"Found target file: {input_html}")
-
-# Generate output filename by removing the "BOB_SMITH" prefix from the base name
-base_name = os.path.splitext(input_html)[0]
-output_ipynb = re.sub(r'^BOB_SMITH_?', '', base_name) + '.ipynb'
+print(f"Converting: {input_html} -> {output_ipynb}")
 
 # Load the HTML file
 with open(input_html, "r", encoding="utf-8") as file:
@@ -29,15 +28,16 @@ soup = BeautifulSoup(html_content, "html.parser")
 # Create a new notebook
 nb = nbf.v4.new_notebook()
 
-# Define the target phrase to filter (for code cells)
-PHRASE_TO_REMOVE1 = """''' Code Removed - Student to include appropriate code to:
-(1) address all tasks (2) produce similar results (3) and answer all questions
-'''"""
+#uncomment if you want to add phrases to remove
+# # Define the target phrase to filter (for code cells)
+# PHRASE_TO_REMOVE1 = """''' Code Removed - Student to include appropriate code to:
+# (1) address all tasks (2) produce similar results (3) and answer all questions
+# '''"""
 
-# additional code to remove BOTH phrases
-PHRASE_TO_REMOVE2 = """''' Code Removed - Student to include appropriate code to: IMPORT and
-(1) address all tasks (2) produce similar results (3) and answer all questions
-'''"""
+# # additional code to remove BOTH phrases
+# PHRASE_TO_REMOVE2 = """''' Code Removed - Student to include appropriate code to: IMPORT and
+# (1) address all tasks (2) produce similar results (3) and answer all questions
+# '''"""
 
 cells = []
 
@@ -49,9 +49,14 @@ for cell in soup.select("div.jp-Notebook-cell"):
         pre_tag = code_wrapper.find("pre")
         if pre_tag:
             code_content = pre_tag.get_text()
+            
+        
+            #uncomment if you want to add phrases to remove
             # Remove the target phrases from the code content
-            cleaned_content = code_content.replace(PHRASE_TO_REMOVE1, "").replace(PHRASE_TO_REMOVE2, "")
-            cells.append(nbf.v4.new_code_cell(cleaned_content))
+            # cleaned_content = code_content.replace(PHRASE_TO_REMOVE1, "").replace(PHRASE_TO_REMOVE2, "")
+            # cells.append(nbf.v4.new_code_cell(cleaned_content))
+
+            cells.append(nbf.v4.new_code_cell(code_content)) #comment this line if you uncomment the lines above
             continue  # Process the next cell
 
     # Check for a markdown cell by looking for the rendered markdown div with the proper mime type
